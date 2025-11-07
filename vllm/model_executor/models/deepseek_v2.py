@@ -1126,7 +1126,9 @@ class DeepseekV2Model(nn.Module):
         self.start_layer, self.end_layer, self.layers = make_layers(
             config.num_hidden_layers,
             lambda prefix: DeepseekV2DecoderLayer(
-                vllm_config, prefix, topk_indices_buffer=topk_indices_buffer
+                vllm_config,
+                prefix,
+                topk_indices_buffer=topk_indices_buffer,
             ),
             prefix=f"{prefix}.layers",
         )
