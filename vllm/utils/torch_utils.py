@@ -409,6 +409,12 @@ def current_stream() -> torch.cuda.Stream:
     return _current_stream_tls.value
 
 
+# Global auxilary stream for running operations in background streams.
+# We have single global auxilary stream to avoid an explosion of streams
+# for every layer (and make profiling look sane).
+#
+# aux_stream() is currently used for:
+#   - MoE shared_expert overlap with router
 _aux_stream: torch.cuda.Stream | None = None
 
 
@@ -420,6 +426,7 @@ def aux_stream() -> torch.cuda.Stream | None:
 
     from vllm.platforms import current_platform
 
+    # TODO: validate this works properly on ROCm platform.
     if _aux_stream is None and current_platform.is_cuda():
         _aux_stream = torch.cuda.Stream()
 

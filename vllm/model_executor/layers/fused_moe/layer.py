@@ -1168,7 +1168,7 @@ def maybe_roundup_hidden_size(
 # Limits when we run shared_experts in a separate stream.
 # We found out that for large batch sizes, the separate stream
 # execution is not beneficial (most likely because of the input clone)
-# TODO: Tune to be more dynamic based on GPU type
+# TODO(alexm-redhat): Tune to be more dynamic based on GPU type
 DUAL_STREAM_TOKEN_THRESHOLD = 256
 
 
@@ -1238,6 +1238,8 @@ class FusedMoE(CustomOp):
             logger.info_once("Disabling MoE shared_experts cuda stream")
             self.shared_experts_stream = None
         else:
+            # TODO(rob): enable shared expert overlap with non-cuda.
+            # aux_stream() returns None on non-cuda platforms.
             self.shared_experts_stream = aux_stream()
 
         if params_dtype is None:
