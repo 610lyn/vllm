@@ -1239,8 +1239,6 @@ class FusedMoE(CustomOp):
             self.shared_experts_stream = None
         else:
             self.shared_experts_stream = aux_stream()
-            if self.shared_experts_stream is not None:
-                logger.info_once("Using a separate cuda stream for MoE shared_experts")
 
         if params_dtype is None:
             params_dtype = torch.get_default_dtype()
