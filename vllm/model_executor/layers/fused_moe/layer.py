@@ -2452,19 +2452,6 @@ class FusedMoE(CustomOp):
             staged_hidden_states.copy_(hidden_states, non_blocking=True)
             staged_router_logits.copy_(router_logits, non_blocking=True)
 
-            use_shared_experts_stream = (
-                has_separate_shared_experts
-                and self.shared_experts_stream is not None
-                and staged_hidden_states.shape[0] <= DUAL_STREAM_TOKEN_THRESHOLD
-            )
-
-            if use_shared_experts_stream:
-                assert self.shared_experts_stream is not None
-                # For chunked, we mark the start sync point for the
-                # shared experts stream here (Note that no concurrency
-                # with the router/gate here)
-                self.shared_experts_stream.wait_stream(current_stream())
-
             # Matrix multiply.
             final_hidden_states = self.quant_method.apply(
                 layer=self,
@@ -2494,21 +2481,7 @@ class FusedMoE(CustomOp):
                 assert not isinstance(final_hidden_states, tuple)
                 assert self.shared_experts is not None
 
-                if use_shared_experts_stream:
-                    # Run shared experts in parallel on a separate stream
-                    # NOTE: We start the separate stream here and mark the
-                    # sync end point immediately after it is done. This is
-                    # important to avoid excessive stream allocations by the cuda
-                    # graph replay later.
-                    with torch.cuda.stream(self.shared_experts_stream):
-                        # Note that staged_hidden_states clone() is necessary
-                        # here to avoid conflict with the main stream
-                        shared_output = self.shared_experts(
-                            staged_hidden_states.clone()
-                        )
-                    current_stream().wait_stream(self.shared_experts_stream)
-                else:
-                    shared_output = self.shared_experts(staged_hidden_states)
+                shared_output = self.shared_experts(staged_hidden_states)
 
                 final_hidden_states = (
                     shared_output,
