@@ -2568,7 +2568,6 @@ class FusedMoE(CustomOp):
         )
 
         if use_shared_experts_stream:
-            assert self.shared_experts_stream is not None
             # Mark sync start point for the separate shared experts
             # stream here since we want to run in parallel with the
             # router/gate (next op below)
